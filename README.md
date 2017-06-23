@@ -31,6 +31,39 @@ This plugin detects automatically a publishable module based on:
 * It has `apply plugin: 'com.android.library` -> AAR module
 * It has something else -> Non publishable module
 
+You have global configurations and module specific ones. You can define both, but always a module specific will take preference over the global ones
+
+#### Global Configurations
+
+You can define a global configuration in the root `build.gradle` like:
+```gradle
+publishGlobalConfigurations {
+    String groupId                           // Group
+    String versionName                       // Version
+
+    String bintrayRepository                 // defaults to "maven"if not found
+
+    Map<String, String> artifactsMappings    // Mappings of moduleName -> artifactName when publishing them
+
+    String url                               // github url
+
+    String bintrayApiKey                     // Api key of bintray
+    String bintrayUser                       // User of bintray
+
+    String licenseUrl                        // License url to find it
+    String licenseName                       // License full name
+}
+```
+
+Just with this you could publish all of them, using the mappings you could map the modules names to the artifacts they will have.
+
+By default, if no mappings specified, they will default to the module name
+
+_Please note that the mappings are also used if a local dependency is found in another module and has to be resolved with a different artifact name._
+
+
+#### Local configuration
+
 For every module you should provide a `PublishConfigurations` where we get the configurations for the publishing. The extension should look like this:
 
 ```gradle
@@ -38,8 +71,6 @@ publishConfigurations {
     groupId = 'com.my.library'
     artifactId = 'core'
     versionName = '1.0.0'
-
-    localArtifacts = [ "the_artifact_of_local_module_I_consume" ] // Name of a local dependency this module consumes, in case it has
 
     bintrayRepository = 'maven' // Defaults to 'maven' if nothing used, but you can specify your own
 
@@ -53,40 +84,16 @@ publishConfigurations {
 }
 ```
 
+If a module has specific values, they will be used instead of the globals! You can play with both of them, using some in the global configurations and others more specific in each module.
+
 ### Run!
 
 Run `./gradlew publishModules` and it will publish all the possible modules in the right way, even if some are AAR and others JAR and depend between them :)
 
-### Relevant notes
-
-All properties ar self explanatory, except `localArtifacts`. Whats this?
-
-The `localArtifacts` is used in case you have inter-module dependencies.
-
-Lets say you have a project with module A and B. B uses A like `compile project(path: 'A')`. When B gets published, we need A published too, else the pom will have a reference to a local module (with "undefined" version). This is bad!
-
-When we see a version has an undetermined version, we look in the `localArtifacts` for the artifact, if it exists, then that dependency was a local one! So we change its version to the release that was performed seconds ago.
-
-Example of what happens (this is pseudocode, please dont think that this is exactly what really happens):
-
-```
-Modules: A and B
-Dependencies: B uses A
-Publishing version: 1.2.2
-Running './gradlew publishModules'
-:Prepare and assemble/test/etc A module (since its lower in the graph than B)
-:publishes A 1.2.2
-:Prepare and assemble/etc B module
-:B has an undefined version!
-:Is the version a local artifact? (Check in the localArtifacts array of the publish extension)
-:It is! Is A. Changing version 'undefined' to '1.2.2'
-:A version 1.2.2 was published just a minute ago, so we find it!
-:publishes B 1.2.2
-```
-
 ### Notes
 
-Even this plugin publishes with itself! Dog-fooding at its finest
+- Even this plugin publishes with itself! Dog-fooding at its finest
+- If a local dependency is found in another module (`compile project(':other_module')'`) it will be resolved as `groupId:thatModuleName|artifactMappedToTheModuleNameInGlobalConfigs:version`
 
 ### Contributing
 

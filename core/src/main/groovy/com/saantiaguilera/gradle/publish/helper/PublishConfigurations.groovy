@@ -26,8 +26,6 @@ public class PublishConfigurations {
     String artifactId           // Artifact
     String versionName          // Version
 
-    List<String> localArtifacts // Local artifacts if you have local dependencies declared (compile (":my_module"))
-
     String bintrayRepository    // defaults to "maven"
 
     String url                  // github url
