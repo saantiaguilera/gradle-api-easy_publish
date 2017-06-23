@@ -11,6 +11,7 @@ import org.gradle.api.tasks.bundling.Jar
 public class PublishHelperPlugin implements Plugin<Project> {
 
     public static final String EXTENSION_PUBLISH_CONFIGURATIONS = "publishConfigurations"
+    public static final String EXTENSION_PUBLISH_GLOBAL_CONFIGURATIONS = "publishGlobalConfigurations"
 
     public static final String TYPE_JAR = 'jar'
     public static final String TYPE_AAR = 'aar'
@@ -19,8 +20,16 @@ public class PublishHelperPlugin implements Plugin<Project> {
 
     public static final String PUBLISH_TASK = 'publishModules'
 
+    public PublishGlobalConfigurations globalConfigurations
+
+    public String rootProjectName
+
     @Override
     void apply(Project project) {
+        rootProjectName = project.name
+
+        project.extensions.create(EXTENSION_PUBLISH_GLOBAL_CONFIGURATIONS, PublishGlobalConfigurations)
+        globalConfigurations = project.publishGlobalConfigurations
         project.subprojects { subproject ->
             subproject.extensions.create(EXTENSION_PUBLISH_CONFIGURATIONS, PublishConfigurations)
 
@@ -49,6 +58,8 @@ public class PublishHelperPlugin implements Plugin<Project> {
         proj.apply plugin: 'maven'
         proj.apply plugin: 'com.jfrog.bintray'
 
+        ConfigurationHelper configHelper = new ConfigurationHelper(globalConfigurations, proj)
+
         proj.afterEvaluate {
             proj.uploadArchives {
                 repositories {
@@ -56,30 +67,33 @@ public class PublishHelperPlugin implements Plugin<Project> {
                         repository(url: "file://${System.properties['user.home']}/.m2/repository")
 
                         pom {
-                            version = proj.publishConfigurations.versionName
-                            artifactId = proj.publishConfigurations.artifactId
-                            groupId = proj.publishConfigurations.groupId
+                            version = configHelper.version
+                            artifactId = configHelper.artifact
+                            groupId = configHelper.group
                             packaging = packagingType
 
                             project {
                                 licenses {
                                     license {
-                                        name proj.publishConfigurations.licenseName
-                                        url proj.publishConfigurations.licenseUrl
+                                        name configHelper.licenseName
+                                        url configHelper.licenseUrl
                                         distribution 'repo'
                                     }
                                 }
                                 packaging packagingType
-                                url proj.publishConfigurations.url
+                                url configHelper.url
                             }
 
                             whenConfigured {
                                 dependencies.each {
                                     if (it.version == 'undefined' &&
-                                            proj.publishConfigurations.localArtifacts &&
-                                            proj.publishConfigurations.localArtifacts.contains(it.artifactId)) {
-                                        it.version = proj.publishConfigurations.versionName
-                                        it.groupId = proj.publishConfigurations.groupId
+                                            it.groupId == rootProjectName) {
+                                        it.version = configHelper.version
+                                        it.groupId = configHelper.group
+
+                                        if (configHelper.getLocalArtifact(it.artifactId)) {
+                                            it.artifactId = configHelper.getLocalArtifact(it.artifactId)
+                                        }
                                     }
                                 }
                             }
@@ -93,50 +107,53 @@ public class PublishHelperPlugin implements Plugin<Project> {
             description 'Publishes a new release version of the modules to Bintray.'
             finalizedBy 'bintrayUpload'
             doLast {
-                proj.group = proj.publishConfigurations.groupId
-                proj.version = proj.publishConfigurations.versionName
+                proj.group = configHelper.group
+                proj.version = configHelper.version
 
                 proj.bintrayUpload {
-                    repoName = proj.publishConfigurations.bintrayRepository ?: 'maven'
+                    repoName = configHelper.bintrayRepositoryName
                     packageVcsUrl =
-                            "${proj.publishConfigurations.url}/releases/tag/v${proj.version}"
+                            "${configHelper.url}/releases/tag/v${proj.version}"
                     versionVcsTag = "v${proj.version}"
-                    user = proj.publishConfigurations.bintrayUser
-                    apiKey = proj.publishConfigurations.bintrayApiKey
+                    user = configHelper.bintrayUser
+                    apiKey = configHelper.bintrayApiKey
                     dryRun = false
                     publish = true
                     configurations = ['archives']
-                    packageName = "${proj.publishConfigurations.groupId}.${proj.publishConfigurations.artifactId}"
-                    packageIssueTrackerUrl = "${proj.publishConfigurations.url}/issues"
-                    packageWebsiteUrl = proj.publishConfigurations.url
+                    packageName = "${configHelper.group}.${configHelper.artifact}"
+                    packageIssueTrackerUrl = "${configHelper.url}/issues"
+                    packageWebsiteUrl = configHelper.url
                     versionName = "${proj.version}"
                     packagePublicDownloadNumbers = false
                 }
 
                 proj.pom {
-                    version = proj.publishConfigurations.versionName
-                    artifactId = proj.publishConfigurations.artifactId
-                    groupId = proj.publishConfigurations.groupId
+                    version = configHelper.version
+                    artifactId = configHelper.artifact
+                    groupId = configHelper.group
                     packaging = packagingType
 
                     project {
                         licenses {
                             license {
-                                name proj.publishConfigurations.licenseName
-                                url proj.publishConfigurations.licenseUrl
+                                name configHelper.licenseName
+                                url configHelper.licenseUrl
                                 distribution 'repo'
                             }
                         }
                         packaging packagingType
-                        url proj.publishConfigurations.url
+                        url configHelper.url
                     }
 
                     dependencies.each {
                         if (it.version == 'undefined' &&
-                                proj.publishConfigurations.localArtifacts &&
-                                proj.publishConfigurations.localArtifacts.contains(it.artifactId)) {
-                            it.version = proj.publishConfigurations.versionName
-                            it.groupId = proj.publishConfigurations.groupId
+                                it.groupId == rootProjectName) {
+                            it.version = configHelper.version
+                            it.groupId = configHelper.group
+
+                            if (configHelper.getLocalArtifact(it.artifactId)) {
+                                it.artifactId = configHelper.getLocalArtifact(it.artifactId)
+                            }
                         }
                     }
                 }.writeTo("build/poms/pom-default.xml")
@@ -154,6 +171,8 @@ public class PublishHelperPlugin implements Plugin<Project> {
     }
 
     def configureJava(Project project) {
+        ConfigurationHelper configHelper = new ConfigurationHelper(globalConfigurations, project)
+
         def sourcesJarTask = project.tasks.create "sourcesJar", Jar
         sourcesJarTask.dependsOn project.tasks.getByName("compileJava")
         sourcesJarTask.classifier = 'sources'
@@ -165,7 +184,7 @@ public class PublishHelperPlugin implements Plugin<Project> {
             mustRunAfter PUBLISH_TASK
             doLast {
                 def jarParentDirectory = "$project.buildDir/libs/"
-                def actualDestination = jarParentDirectory + "${project.publishConfigurations.artifactId}.jar"
+                def actualDestination = jarParentDirectory + "${configHelper.artifact}.jar"
 
                 def prevFile = project.file(jarParentDirectory + "${project.name}.jar");
                 if (prevFile.exists()) {
@@ -179,6 +198,8 @@ public class PublishHelperPlugin implements Plugin<Project> {
     }
 
     def configureAndroid(Project project) {
+        ConfigurationHelper configHelper = new ConfigurationHelper(globalConfigurations, project)
+
         project.apply plugin: 'com.github.dcendents.android-maven'
 
         project.android.libraryVariants.all { variant ->
@@ -202,7 +223,7 @@ public class PublishHelperPlugin implements Plugin<Project> {
 
                 File aarFile = project.file(aarParentDirectory + "${project.name}-release.aar")
 
-                def actualDestination = aarParentDirectory + "${project.publishConfigurations.artifactId}.aar"
+                def actualDestination = aarParentDirectory + "${configHelper.artifact}.aar"
 
                 aarFile.renameTo(actualDestination)
 
