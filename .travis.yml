@@ -1,0 +1,32 @@
+sudo: required
+dist: precise
+group: edge
+
+language: groovy
+
+cache:
+  directories:
+    - $HOME/.gradle/caches/$GRADLE_VERSION
+    - $HOME/.gradle/caches/jars-1
+    - $HOME/.gradle/native
+    - $HOME/.gradle/wrapper
+
+before_cache:
+  - rm -rf $HOME/.gradle/daemon/
+  - rm -rf $HOME/.gradle/caches/modules-2/modules-2.lock
+
+jdk: oraclejdk8
+
+git:
+  depth: 10
+
+branches:
+  only:
+    - develop
+    - master
+
+matrix:
+  fast_finish: true
+
+script:
+  - ./gradlew core:build

@@ -1,5 +1,7 @@
 ## Easy Publish
 
+[![Build Status](https://travis-ci.org/saantiaguilera/gradle-api-easy_publish.svg?branch=master)](https://travis-ci.org/saantiaguilera/gradle-api-easy_publish) [![Download](https://api.bintray.com/packages/saantiaguilera/maven/com.saantiaguilera.gradle.publish.helper.core/images/download.svg) ](https://bintray.com/saantiaguilera/maven/com.saantiaguilera.gradle.publish.helper.core/_latestVersion)
+
 Publish multiple artifacts (project modules) to bintray in a mega easy way.
 
 This plugin supports JAR / AAR projects.
