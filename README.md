@@ -38,20 +38,23 @@ You have global configurations and module specific ones. You can define both, bu
 You can define a global configuration in the root `build.gradle` like:
 ```gradle
 publishGlobalConfigurations {
-    String groupId                           // Group
-    String versionName                       // Version
+    groupId = 'com.my.library'                // Group
+    versionName = '1.0.0'                     // Version
 
-    String bintrayRepository                 // defaults to "maven"if not found
+    bintrayRepository = 'maven'               // defaults to "maven"if not found
 
-    Map<String, String> artifactsMappings    // Mappings of moduleName -> artifactName when publishing them
+    artifactsMappings = [                     // Mappings of moduleName -> artifactName when publishing them
+        'module1' : 'artifact1',              // In this case the module name is 'module1', but will be released as:
+        'module2' : 'artifact2'               // "com.my.library:artifact1:1.0.0"
+    ]
 
-    String url                               // github url
+    url = "http://github.com/user/repo"       // github url
 
-    String bintrayApiKey                     // Api key of bintray
-    String bintrayUser                       // User of bintray
+    bintrayApiKey = System.getenv('apikey')   // Api key of bintray
+    bintrayUser = System.getenv('user')       // User of bintray
 
-    String licenseUrl                        // License url to find it
-    String licenseName                       // License full name
+    licenseUrl = 'sourceforge_url'            // License url to find it
+    licenseName = 'sourceforge_name'          // License full name
 }
 ```
 
@@ -72,15 +75,15 @@ publishConfigurations {
     artifactId = 'core'
     versionName = '1.0.0'
 
-    bintrayRepository = 'maven' // Defaults to 'maven' if nothing used, but you can specify your own
+    bintrayRepository = 'maven'
 
-    url = "https://github.com/saantiaguilera/android-api-SecureKeys" // Your url
+    url = "https://github.com/saantiaguilera/android-api-SecureKeys"
 
-    bintrayUser = System.getenv('BINTRAY_USER') // Or get it from a file?
-    bintrayApiKey = System.getenv('BINTRAY_APIKEY') // Or get if from a file?
+    bintrayUser = System.getenv('BINTRAY_USER')
+    bintrayApiKey = System.getenv('BINTRAY_APIKEY')
 
-    licenseUrl = "http://www.opensource.org/licenses/MIT" // Or whatever license you use
-    licenseName = "The MIT License" // Or whatever license you use
+    licenseUrl = "http://www.opensource.org/licenses/MIT"
+    licenseName = "The MIT License"
 }
 ```
 
