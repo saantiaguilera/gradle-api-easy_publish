@@ -54,11 +54,19 @@ public class ConfigurationHelper {
      * @return
      */
     def getArtifact() {
-        return scopeConf.artifactId ?: globalConf.artifactsMappings.get(subprojectName, subprojectName)
+        if (!scopeConf.artifactId) {
+            if (globalConf.artifactsMappings) {
+                return globalConf.artifactsMappings.get(subprojectName, subprojectName)
+            } else {
+                return subprojectName
+            }
+        }
+
+        return scopeConf.artifactId
     }
 
     def getLocalArtifact(String name) {
-        return globalConf.artifactsMappings.get(name)
+        return globalConf.artifactsMappings?.get(name)
     }
 
     def getLicenseName() {

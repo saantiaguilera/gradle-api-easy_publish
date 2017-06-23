@@ -3,7 +3,6 @@ apply plugin: 'com.saantiaguilera.gradle.publish.helper'
 buildscript {
     repositories {
         jcenter()
-
         maven {
             // Until it is in jcenter
             url  "http://dl.bintray.com/saantiaguilera/maven"
@@ -13,10 +12,26 @@ buildscript {
     dependencies {
         def mavenPluginVersion = '1.5'
         def bintrayPluginVersion = '1.7.3'
-        def latestStableMajorOfThisPlugin = '1.+'
+        def latestStableMajorOfThisPlugin = '2.+'
 
         classpath "com.jfrog.bintray.gradle:gradle-bintray-plugin:$bintrayPluginVersion"
         classpath "com.github.dcendents:android-maven-gradle-plugin:$mavenPluginVersion"
         classpath "com.saantiaguilera.gradle.publish.helper:core:$latestStableMajorOfThisPlugin"
     }
+}
+
+group 'com.saantiaguilera.gradle.publish.helper'
+version '2.0.0'
+
+publishGlobalConfigurations {
+    groupId = group
+    versionName = version
+
+    url = "https://github.com/saantiaguilera/gradle-api-easy_publish" // Your url
+
+    bintrayUser = System.getenv('BINTRAY_USER') // Or get it from a file?
+    bintrayApiKey = System.getenv('BINTRAY_KEY') // Or get if from a file?
+
+    licenseUrl = "http://www.opensource.org/licenses/BSD-3-Clause" // Or whatever license you use
+    licenseName = "The 3-Clause BSD License" // Or whatever license you use
 }
