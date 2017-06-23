@@ -1,0 +1,14 @@
+apply plugin: 'groovy'
+apply plugin: 'maven'
+
+repositories {
+    jcenter()
+}
+
+group 'com.saantiaguilera.gradle.publish.helper'
+version '1.0.0'
+
+dependencies {
+    compile gradleApi()
+    compile localGroovy()
+}
