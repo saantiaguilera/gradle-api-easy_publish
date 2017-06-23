@@ -27,7 +27,7 @@ This will create a single task `publishModules`. Please read the _Run!_ part of 
 
 This plugin detects automatically a publishable module based on:
 
-* It has `apply plugin: 'java'` -> JAR module
+* It has `apply plugin: 'java|groovy|something_that_applies_JavaPlugin_inside'` -> JAR module
 * It has `apply plugin: 'com.android.library` -> AAR module
 * It has something else -> Non publishable module
 
@@ -45,8 +45,8 @@ publishConfigurations {
 
     url = "https://github.com/saantiaguilera/android-api-SecureKeys" // Your url
 
-    bintrayUser = System.getenv(BINTRAY_USER) // Or get it from a file?
-    bintrayApiKey = System.getenv(BINTRAY_APIKEY) // Or get if from a file?
+    bintrayUser = System.getenv('BINTRAY_USER') // Or get it from a file?
+    bintrayApiKey = System.getenv('BINTRAY_APIKEY') // Or get if from a file?
 
     licenseUrl = "http://www.opensource.org/licenses/MIT" // Or whatever license you use
     licenseName = "The MIT License" // Or whatever license you use
@@ -83,6 +83,10 @@ Running './gradlew publishModules'
 :A version 1.2.2 was published just a minute ago, so we find it!
 :publishes B 1.2.2
 ```
+
+### Notes
+
+Even this plugin publishes with itself! Dog-fooding at its finest
 
 ### Contributing
 

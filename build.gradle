@@ -1,9 +1,22 @@
+apply plugin: 'com.saantiaguilera.gradle.publish.helper'
+
 buildscript {
     repositories {
         jcenter()
+
+        maven {
+            // Until it is in jcenter
+            url  "http://dl.bintray.com/saantiaguilera/maven"
+        }
     }
 
     dependencies {
-        classpath 'com.github.dcendents:android-maven-gradle-plugin:1.5'
+        def mavenPluginVersion = '1.5'
+        def bintrayPluginVersion = '1.7.3'
+        def latestStableMajorOfThisPlugin = '1.+'
+
+        classpath "com.jfrog.bintray.gradle:gradle-bintray-plugin:$bintrayPluginVersion"
+        classpath "com.github.dcendents:android-maven-gradle-plugin:$mavenPluginVersion"
+        classpath "com.saantiaguilera.gradle.publish.helper:core:$latestStableMajorOfThisPlugin"
     }
 }
