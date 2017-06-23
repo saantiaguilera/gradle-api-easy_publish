@@ -64,7 +64,7 @@ _Please note that the mappings are also used if a local dependency is found in a
 
 #### Local configuration
 
-For every module you should provide a `PublishConfigurations` where we get the configurations for the publishing. The extension should look like this:
+For every module in their `build.gradle` you can provide a `publishConfigurations`. The extension should look like this:
 
 ```gradle
 publishConfigurations {
@@ -84,7 +84,7 @@ publishConfigurations {
 }
 ```
 
-If a module has specific values, they will be used instead of the globals! You can play with both of them, using some in the global configurations and others more specific in each module.
+If a module has declared X values, they will be used instead of the globals! You can play with both of them, using some in the global configurations and others more specific in each module.
 
 ### Run!
 
