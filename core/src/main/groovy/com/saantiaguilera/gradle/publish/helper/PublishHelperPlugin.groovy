@@ -2,6 +2,7 @@ package com.saantiaguilera.gradle.publish.helper
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.Task
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.tasks.bundling.Jar
 
@@ -18,7 +19,8 @@ public class PublishHelperPlugin implements Plugin<Project> {
 
     public static final String ANDROID_LIBRARY_PLUGIN_ID = "com.android.library"
 
-    public static final String PUBLISH_TASK = 'publishModules'
+    public static final String PUBLISH_ROOT_TASK = 'publishModules'
+    public static final String PUBLISH_MODULE_TASK = 'publishModule'
 
     public PublishGlobalConfigurations globalConfigurations
 
@@ -52,6 +54,24 @@ public class PublishHelperPlugin implements Plugin<Project> {
             }
         }
 
+        project.afterEvaluate {
+            project.task(PUBLISH_ROOT_TASK) { Task task ->
+                task.description 'Publish all the modules ordered and specified by publishGlobalConfigurations { publishOrder }'
+                if (project.gradle.startParameter.taskNames.toListString().contains("publishModules") &&
+                        globalConfigurations.publishOrder && !globalConfigurations.publishOrder.isEmpty()) {
+                    def order = []
+                    globalConfigurations.publishOrder.each { String moduleName ->
+                        order.add(project.subprojects.find { it.name == moduleName }.tasks.publishModule)
+                    }
+                    for (int i = order.size() - 1; i >= 0; i--) {
+                        if (i - 1 >= 0) {
+                            order[i].dependsOn order[i - 1]
+                        }
+                    }
+                    task.dependsOn order[order.size() - 1]
+                }
+            }
+        }
     }
 
     def configure(Project proj, String packagingType) {
@@ -100,8 +120,8 @@ public class PublishHelperPlugin implements Plugin<Project> {
             }
         }
 
-        proj.task(PUBLISH_TASK) {
-            description 'Publishes a new release version of the modules to Bintray.'
+        proj.task(PUBLISH_MODULE_TASK) {
+            description 'Publishes a new release version of the module to Bintray.'
             finalizedBy 'bintrayUpload'
             doLast {
                 proj.group = configHelper.group
@@ -175,7 +195,7 @@ public class PublishHelperPlugin implements Plugin<Project> {
         sourcesJarTask.classifier = 'sources'
         sourcesJarTask.from project.tasks.getByName("compileJava").source
 
-        project.tasks.publishModules.dependsOn 'assemble', 'test', 'check', 'sourcesJar'
+        project.tasks.publishModule.dependsOn 'assemble', 'test', 'check', 'sourcesJar'
     }
 
     def configureAndroid(Project project) {
@@ -185,7 +205,7 @@ public class PublishHelperPlugin implements Plugin<Project> {
         sourcesJarTask.classifier = 'sources'
         sourcesJarTask.from project.android.sourceSets.main.java.srcDirs
 
-        project.tasks.publishModules.dependsOn 'assembleRelease', 'testReleaseUnitTest', 'check', 'sourcesJar'
+        project.tasks.publishModule.dependsOn 'assembleRelease', 'testReleaseUnitTest', 'check', 'sourcesJar'
     }
 
     def addArchives(String packagingType,

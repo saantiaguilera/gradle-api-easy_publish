@@ -17,4 +17,6 @@ public class PublishGlobalConfigurations {
     String licenseUrl                        // License url to find it
     String licenseName                       // License full name
 
+    List<String> publishOrder                // Order for publishing modules
+
 }

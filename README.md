@@ -21,7 +21,7 @@ buildscript {
 }
 ```
 
-This will create a single task `publishModules`. Please read the _Run!_ part of the readme for more information
+This will create a single root task `publishModules` and for each module a task `publishModule`. Please read the _Run!_ part of the readme for more information
 
 ### Configure
 
@@ -55,6 +55,8 @@ publishGlobalConfigurations {
 
     licenseUrl = 'sourceforge_url'            // License url to find it
     licenseName = 'sourceforge_name'          // License full name
+
+    publishOrder = [ 'module1', 'module2' ]   // The order they should be published if used global task
 }
 ```
 
@@ -91,7 +93,20 @@ If a module has declared X values, they will be used instead of the globals! You
 
 ### Run!
 
-Run `./gradlew publishModules` and it will publish all the possible modules in the right way, even if some are AAR and others JAR and depend between them :)
+Run `./gradlew my_module:publishModule` and it will publish it :)
+
+If in the global scope the `publishOrder` was specified, you can run `./gradlew publishModules` and all the modules will be published, even if some are AAR and others JAR and depend between them.
+
+The `publishOrder` should be formed from 'depends from none' to 'depends from all'. Example
+
+```
+:Modules A, B, C, D
+:A depends from B, C, D
+:B depends from D
+:C depends from B
+:D depends from no local module
+:publishOrder = [ 'D', 'B', 'C', 'A' ]
+```
 
 ### Notes
 
