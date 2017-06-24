@@ -84,17 +84,14 @@ public class PublishHelperPlugin implements Plugin<Project> {
                                 url configHelper.url
                             }
 
-                            whenConfigured {
-                                dependencies.each {
-                                    if ((it.version == 'undefined' || it.version == 'unspecified') &&
-                                            it.groupId == rootProjectName) {
-                                        it.version = configHelper.version
-                                        it.groupId = configHelper.group
+                            generatedDependencies.findAll {
+                                    (it.version == 'unspecified' || it.version == 'undefined') &&
+                                    it.groupId == rootProjectName }.each { dep ->
+                                dep.version = configHelper.version
+                                dep.groupId = configHelper.group
 
-                                        if (configHelper.getLocalArtifact(it.artifactId)) {
-                                            it.artifactId = configHelper.getLocalArtifact(it.artifactId)
-                                        }
-                                    }
+                                if (configHelper.getLocalArtifact(dep.artifactId)) {
+                                    dep.artifactId = configHelper.getLocalArtifact(dep.artifactId)
                                 }
                             }
                         }
@@ -146,15 +143,14 @@ public class PublishHelperPlugin implements Plugin<Project> {
                         url configHelper.url
                     }
 
-                    dependencies.each {
-                        if ((it.version == 'undefined' || it.version == 'unspecified') &&
-                                it.groupId == rootProjectName) {
-                            it.version = configHelper.version
-                            it.groupId = configHelper.group
+                    generatedDependencies.findAll {
+                            (it.version == 'unspecified' || it.version == 'undefined') &&
+                            it.groupId == rootProjectName }.each { dep ->
+                        dep.version = configHelper.version
+                        dep.groupId = configHelper.group
 
-                            if (configHelper.getLocalArtifact(it.artifactId)) {
-                                it.artifactId = configHelper.getLocalArtifact(it.artifactId)
-                            }
+                        if (configHelper.getLocalArtifact(dep.artifactId)) {
+                            dep.artifactId = configHelper.getLocalArtifact(dep.artifactId)
                         }
                     }
                 }.writeTo("build/poms/pom-default.xml")
