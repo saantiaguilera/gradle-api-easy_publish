@@ -164,6 +164,8 @@ public class PublishHelperPlugin implements Plugin<Project> {
 
                 proj.configurations.archives.artifacts.clear()
 
+                addArchives(packagingType, proj)
+
                 println "Publishing: ${String.format("%s:%s:%s", proj.group, proj.name, proj.version)}"
             }
         }
@@ -180,22 +182,6 @@ public class PublishHelperPlugin implements Plugin<Project> {
         sourcesJarTask.from project.tasks.getByName("compileJava").source
 
         project.tasks.publishModules.dependsOn 'assemble', 'test', 'check', 'sourcesJar'
-
-        project.task("${PUBLISH_TASK}AddArtifacts") {
-            mustRunAfter PUBLISH_TASK
-            doLast {
-                def jarParentDirectory = "$project.buildDir/libs/"
-                def actualDestination = jarParentDirectory + "${configHelper.artifact}.jar"
-
-                def prevFile = project.file(jarParentDirectory + "${project.name}.jar");
-                if (prevFile.exists()) {
-                    prevFile.renameTo(actualDestination)
-                }
-
-                project.artifacts.add('archives', project.file(actualDestination))
-                project.artifacts.add('archives', project.tasks['sourcesJar'])
-            }
-        }
     }
 
     def configureAndroid(Project project) {
@@ -211,10 +197,25 @@ public class PublishHelperPlugin implements Plugin<Project> {
         }
 
         project.tasks.publishModules.dependsOn 'assembleRelease', 'testReleaseUnitTest', 'check', 'releaseSourcesJar'
+    }
 
-        project.task("${PUBLISH_TASK}AddArtifacts") {
-            mustRunAfter PUBLISH_TASK
-            doLast {
+    def addArchives(String packagingType,
+                    Project project) {
+        ConfigurationHelper configHelper = new ConfigurationHelper(globalConfigurations, project)
+        switch (packagingType) {
+            case TYPE_JAR:
+                def jarParentDirectory = "$project.buildDir/libs/"
+                def actualDestination = jarParentDirectory + "${configHelper.artifact}.jar"
+
+                def prevFile = project.file(jarParentDirectory + "${project.name}.jar");
+                if (prevFile.exists()) {
+                    prevFile.renameTo(actualDestination)
+                }
+
+                project.artifacts.add('archives', project.file(actualDestination))
+                project.artifacts.add('archives', project.tasks['sourcesJar'])
+                break;
+            case TYPE_AAR:
                 def aarParentDirectory = "$project.buildDir/outputs/aar/"
 
                 def prevFile = project.file(aarParentDirectory + "${project.name}.aar");
@@ -230,7 +231,11 @@ public class PublishHelperPlugin implements Plugin<Project> {
 
                 project.artifacts.add('archives', project.file(actualDestination))
                 project.artifacts.add('archives', project.tasks['releaseSourcesJar'])
-            }
+                break;
+        }
+
+        if (project.tasks.findByName('javadocJar')) {
+            project.artifacts.add('archives', project.tasks.javadocJar)
         }
     }
 
