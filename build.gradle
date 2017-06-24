@@ -21,7 +21,7 @@ buildscript {
 }
 
 group 'com.saantiaguilera.gradle.publish.helper'
-version '2.0.2'
+version '2.0.2
 
 publishGlobalConfigurations {
     groupId = group
