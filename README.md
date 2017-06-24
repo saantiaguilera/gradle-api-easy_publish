@@ -97,6 +97,7 @@ Run `./gradlew publishModules` and it will publish all the possible modules in t
 
 - Even this plugin publishes with itself! Dog-fooding at its finest
 - If a local dependency is found in another module (`compile project(':other_module')'`) it will be resolved as `groupId:thatModuleName|artifactMappedToTheModuleNameInGlobalConfigs:version`
+- By default javadocs arent included in the bintray package. If you wish to also deploy javadoc, please create a task `javadocJar` in your project and we will detect it and automatically add them :)
 
 ### Contributing
 
