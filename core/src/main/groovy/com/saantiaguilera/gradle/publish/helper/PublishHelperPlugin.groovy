@@ -125,6 +125,7 @@ public class PublishHelperPlugin implements Plugin<Project> {
                     packageWebsiteUrl = configHelper.url
                     versionName = "${proj.version}"
                     packagePublicDownloadNumbers = false
+                    packageLicenses = [ configHelper.licenseName ]
                 }
 
                 proj.pom {
