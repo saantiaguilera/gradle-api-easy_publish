@@ -17,34 +17,22 @@ public class ConfigurationHelper {
         this.globalConf = globalConfigurations
         this.scopeConf = subproject.publishConfigurations
         this.subprojectName = subproject.name
-
-        if (!bintrayUser) {
-            throw new GradleException('No bintray.user found in global or scope extension of module:' + subprojectName)
-        }
-
-        if (!bintrayApiKey) {
-            throw new GradleException('No bintray.apikey found in global or scope extension of module:' + subprojectName)
-        }
-
-        if (!group) {
-            throw new GradleException('No groupId found in global or scope extension of module:' + subprojectName)
-        }
-
-        if (!version) {
-            throw new GradleException('No version found in global or scope extension of module:' + subprojectName)
-        }
-
-        if (!url) {
-            throw new GradleException('No url found in global or scope extension of module:' + subprojectName)
-        }
     }
 
     def getVersion() {
-        return scopeConf.versionName ?: globalConf.versionName
+        def version = scopeConf.versionName ?: globalConf.versionName
+        if (!version) {
+            throw new GradleException('No version found in global or scope extension of module:' + subprojectName)
+        }
+        return version
     }
 
     def getGroup() {
-        return scopeConf.groupId ?: globalConf.groupId
+        def group = scopeConf.groupId ?: globalConf.groupId
+        if (!group) {
+            throw new GradleException('No groupId found in global or scope extension of module:' + subprojectName)
+        }
+        return group
     }
 
     /**
@@ -78,7 +66,11 @@ public class ConfigurationHelper {
     }
 
     def getUrl() {
-        return scopeConf.url ?: globalConf.url
+        def url = scopeConf.url ?: globalConf.url
+        if (!url) {
+            throw new GradleException('No url found in global or scope extension of module:' + subprojectName)
+        }
+        return url
     }
 
     def getBintrayRepositoryName() {
@@ -87,11 +79,19 @@ public class ConfigurationHelper {
     }
 
     def getBintrayUser() {
-        return scopeConf.bintrayUser ?: globalConf.bintrayUser
+        def user = scopeConf.bintrayUser ?: globalConf.bintrayUser
+        if (!user) {
+            throw new GradleException('No bintrayUser found in global or scope extension of module:' + subprojectName)
+        }
+        return user
     }
 
     def getBintrayApiKey() {
-        return scopeConf.bintrayApiKey ?: globalConf.bintrayApiKey
+        def apiKey = scopeConf.bintrayApiKey ?: globalConf.bintrayApiKey
+        if (!apiKey) {
+            throw new GradleException('No bintrayApiKey found in global or scope extension of module:' + subprojectName)
+        }
+        return apiKey
     }
 
 }
