@@ -86,7 +86,7 @@ public class PublishHelperPlugin implements Plugin<Project> {
 
                             whenConfigured {
                                 dependencies.each {
-                                    if (it.version == 'undefined' &&
+                                    if ((it.version == 'undefined' || it.version == 'unspecified') &&
                                             it.groupId == rootProjectName) {
                                         it.version = configHelper.version
                                         it.groupId = configHelper.group
@@ -147,7 +147,7 @@ public class PublishHelperPlugin implements Plugin<Project> {
                     }
 
                     dependencies.each {
-                        if (it.version == 'undefined' &&
+                        if ((it.version == 'undefined' || it.version == 'unspecified') &&
                                 it.groupId == rootProjectName) {
                             it.version = configHelper.version
                             it.groupId = configHelper.group
@@ -174,8 +174,6 @@ public class PublishHelperPlugin implements Plugin<Project> {
     }
 
     def configureJava(Project project) {
-        ConfigurationHelper configHelper = new ConfigurationHelper(globalConfigurations, project)
-
         def sourcesJarTask = project.tasks.create "sourcesJar", Jar
         sourcesJarTask.dependsOn project.tasks.getByName("compileJava")
         sourcesJarTask.classifier = 'sources'
@@ -185,18 +183,13 @@ public class PublishHelperPlugin implements Plugin<Project> {
     }
 
     def configureAndroid(Project project) {
-        ConfigurationHelper configHelper = new ConfigurationHelper(globalConfigurations, project)
-
         project.apply plugin: 'com.github.dcendents.android-maven'
 
-        project.android.libraryVariants.all { variant ->
-            def sourcesJarTask = project.tasks.create "${variant.buildType.name}SourcesJar", Jar
-            sourcesJarTask.dependsOn variant.javaCompile
-            sourcesJarTask.classifier = 'sources'
-            sourcesJarTask.from variant.javaCompile.source
-        }
+        def sourcesJarTask = project.tasks.create "sourcesJar", Jar
+        sourcesJarTask.classifier = 'sources'
+        sourcesJarTask.from project.android.sourceSets.main.java.srcDirs
 
-        project.tasks.publishModules.dependsOn 'assembleRelease', 'testReleaseUnitTest', 'check', 'releaseSourcesJar'
+        project.tasks.publishModules.dependsOn 'assembleRelease', 'testReleaseUnitTest', 'check', 'sourcesJar'
     }
 
     def addArchives(String packagingType,
@@ -205,35 +198,35 @@ public class PublishHelperPlugin implements Plugin<Project> {
         switch (packagingType) {
             case TYPE_JAR:
                 def jarParentDirectory = "$project.buildDir/libs/"
-                def actualDestination = jarParentDirectory + "${configHelper.artifact}.jar"
-
                 def prevFile = project.file(jarParentDirectory + "${project.name}.jar");
-                if (prevFile.exists()) {
-                    prevFile.renameTo(actualDestination)
+                def actualFile = project.file(jarParentDirectory + "${configHelper.artifact}-${configHelper.version}.jar")
+
+                if (prevFile.exists() && prevFile.path != actualFile.path) {
+                    if (actualFile.exists()) {
+                        actualFile.delete()
+                    }
+                    actualFile << prevFile.bytes
                 }
 
-                project.artifacts.add('archives', project.file(actualDestination))
-                project.artifacts.add('archives', project.tasks['sourcesJar'])
+                project.artifacts.add('archives', actualFile)
                 break;
             case TYPE_AAR:
                 def aarParentDirectory = "$project.buildDir/outputs/aar/"
+                File aarFile = project.file(aarParentDirectory + "${project.name}-release.aar")
+                File actualFile = project.file(aarParentDirectory + "${configHelper.artifact}.aar")
 
-                def prevFile = project.file(aarParentDirectory + "${project.name}.aar");
-                if (prevFile.exists()) {
-                    prevFile.delete();
+                if (aarFile.exists() != aarFile.path != actualFile.path) {
+                    if (actualFile.exists()) {
+                        actualFile.delete()
+                    }
+                    actualFile << aarFile.bytes
                 }
 
-                File aarFile = project.file(aarParentDirectory + "${project.name}-release.aar")
-
-                def actualDestination = aarParentDirectory + "${configHelper.artifact}.aar"
-
-                aarFile.renameTo(actualDestination)
-
-                project.artifacts.add('archives', project.file(actualDestination))
-                project.artifacts.add('archives', project.tasks['releaseSourcesJar'])
+                project.artifacts.add('archives', actualFile)
                 break;
         }
 
+        project.artifacts.add('archives', project.tasks['sourcesJar'])
         if (project.tasks.findByName('javadocJar')) {
             project.artifacts.add('archives', project.tasks.javadocJar)
         }
