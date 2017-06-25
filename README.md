@@ -17,6 +17,10 @@ buildscript {
     // ...
     dependencies {
         classpath "com.saantiaguilera.gradle.publish.helper:core:<latest_version>"
+        
+        // We also need the bintray and maven plugins!
+        classpath("com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7.3")
+        classpath("com.github.dcendents:android-maven-gradle-plugin:1.5")
     }
 }
 ```
