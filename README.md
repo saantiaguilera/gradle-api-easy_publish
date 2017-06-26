@@ -52,7 +52,7 @@ publishGlobalConfigurations {
         'module2' : 'artifact2'               // "com.my.library:artifact1:1.0.0"
     ]
 
-    url = "http://github.com/user/repo"       // github url
+    githubUrl = "http://github.com/user/repo" // Github url
 
     bintrayApiKey = System.getenv('apikey')   // Api key of bintray
     bintrayUser = System.getenv('user')       // User of bintray
@@ -60,7 +60,7 @@ publishGlobalConfigurations {
     licenseUrl = 'sourceforge_url'            // License url to find it
     licenseName = 'sourceforge_name'          // License full name
 
-    publishOrder = [ 'module1', 'module2' ]   // The order they should be published if used global task
+    // And more. Please see PublishGlobalConfigurations.groovy class inside core/ to see all properties
 }
 ```
 
@@ -83,13 +83,15 @@ publishConfigurations {
 
     bintrayRepository = 'maven'
 
-    url = "https://github.com/saantiaguilera/android-api-SecureKeys"
+    githubUrl = "https://github.com/saantiaguilera/android-api-SecureKeys"
 
     bintrayUser = System.getenv('BINTRAY_USER')
     bintrayApiKey = System.getenv('BINTRAY_APIKEY')
 
     licenseUrl = "http://www.opensource.org/licenses/MIT"
     licenseName = "The MIT License"
+
+    // And more. Please see PublishConfigurations.groovy class inside core/ to see all properties
 }
 ```
 
@@ -99,18 +101,7 @@ If a module has declared X values, they will be used instead of the globals! You
 
 Run `./gradlew my_module:publishModule` and it will publish it :)
 
-If in the global scope the `publishOrder` was specified, you can run `./gradlew publishModules` and all the modules will be published, even if some are AAR and others JAR and depend between them.
-
-The `publishOrder` should be formed from 'depends from none' to 'depends from all'. Example
-
-```
-:Modules A, B, C, D
-:A depends from B, C, D
-:B depends from D
-:C depends from B
-:D depends from no local module
-:publishOrder = [ 'D', 'B', 'C', 'A' ]
-```
+If you want to publish all available modules you can run `./gradlew publishModules` and all the modules will be published, even if some are AAR and others JAR and depend between them.
 
 ### Notes
 
