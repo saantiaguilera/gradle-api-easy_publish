@@ -2,7 +2,6 @@ package com.saantiaguilera.gradle.publish.helper
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.Task
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.tasks.bundling.Jar
 
@@ -22,13 +21,25 @@ public class PublishHelperPlugin implements Plugin<Project> {
     public static final String PUBLISH_ROOT_TASK = 'publishModules'
     public static final String PUBLISH_MODULE_TASK = 'publishModule'
 
+    public static final Map<String, List<String>> scopeConfigurations = [
+            provided : [
+                'compileOnly', 'provided', 'releaseProvided'
+            ],
+            compile : [
+                'compile', 'releaseCompile'
+            ],
+            test : [
+                'testCompile', 'testReleaseCompile'
+            ]
+    ]
+
     public PublishGlobalConfigurations globalConfigurations
 
-    public String rootProjectName
+    public Project rootProject
 
     @Override
     void apply(Project project) {
-        rootProjectName = project.name
+        rootProject = project
 
         project.extensions.create(EXTENSION_PUBLISH_GLOBAL_CONFIGURATIONS, PublishGlobalConfigurations)
         globalConfigurations = project.publishGlobalConfigurations
@@ -55,20 +66,12 @@ public class PublishHelperPlugin implements Plugin<Project> {
         }
 
         project.afterEvaluate {
-            project.task(PUBLISH_ROOT_TASK) { Task task ->
-                task.description 'Publish all the modules ordered and specified by publishGlobalConfigurations { publishOrder }'
-                if (project.gradle.startParameter.taskNames.toListString().contains("publishModules") &&
-                        globalConfigurations.publishOrder && !globalConfigurations.publishOrder.isEmpty()) {
-                    def order = []
-                    globalConfigurations.publishOrder.each { String moduleName ->
-                        order.add(project.subprojects.find { it.name == moduleName }.tasks.publishModule)
+            project.task(PUBLISH_ROOT_TASK) { task ->
+                task.description 'Publish all the possible modules'
+                project.subprojects.each { subproject ->
+                    if (subproject.tasks.findByName(PUBLISH_MODULE_TASK)) {
+                        task.dependsOn subproject.tasks[PUBLISH_MODULE_TASK]
                     }
-                    for (int i = order.size() - 1; i >= 0; i--) {
-                        if (i - 1 >= 0) {
-                            order[i].dependsOn order[i - 1]
-                        }
-                    }
-                    task.dependsOn order[order.size() - 1]
                 }
             }
         }
@@ -85,36 +88,10 @@ public class PublishHelperPlugin implements Plugin<Project> {
                 repositories {
                     mavenDeployer {
                         repository(url: "file://${System.properties['user.home']}/.m2/repository")
+                        pom(flattenPom(proj, packagingType))
+                            .writeTo("build/poms/pom-default.xml")
 
-                        pom {
-                            version = configHelper.version
-                            artifactId = configHelper.artifact
-                            groupId = configHelper.group
-                            packaging = packagingType
 
-                            project {
-                                licenses {
-                                    license {
-                                        name configHelper.licenseName
-                                        url configHelper.licenseUrl
-                                        distribution 'repo'
-                                    }
-                                }
-                                packaging packagingType
-                                url configHelper.url
-                            }
-
-                            generatedDependencies.findAll {
-                                    (it.version == 'unspecified' || it.version == 'undefined') &&
-                                    it.groupId == rootProjectName }.each { dep ->
-                                dep.version = configHelper.version
-                                dep.groupId = configHelper.group
-
-                                if (configHelper.getLocalArtifact(dep.artifactId)) {
-                                    dep.artifactId = configHelper.getLocalArtifact(dep.artifactId)
-                                }
-                            }
-                        }
                     }
                 }
             }
@@ -129,51 +106,40 @@ public class PublishHelperPlugin implements Plugin<Project> {
 
                 proj.bintrayUpload {
                     repoName = configHelper.bintrayRepositoryName
-                    packageVcsUrl =
-                            "${configHelper.url}/releases/tag/v${proj.version}"
-                    versionVcsTag = "v${proj.version}"
+
+                    packageName = "${configHelper.group}.${configHelper.artifact}"
+                    packageDesc = configHelper.packageDescription
+                    packageIssueTrackerUrl = "${configHelper.githubUrl}/issues"
+                    packageWebsiteUrl = configHelper.websiteUrl
+                    packagePublicDownloadNumbers = configHelper.isPublicDownloadNumbers()
+                    packageGithubRepo = configHelper.githubUrl
+                    packageLicenses = [configHelper.licenseName]
+                    packageLabels = configHelper.packageLabels
+                    packageVcsUrl = "${configHelper.githubUrl}/releases/tag/v${proj.version}"
+
                     user = configHelper.bintrayUser
                     apiKey = configHelper.bintrayApiKey
+
+                    versionName = "${proj.version}"
+                    versionVcsTag = "v${proj.version}"
+                    versionDesc = configHelper.versionDescription
+
+                    signVersion = configHelper.isGpgSign()
+                    gpgPassphrase = configHelper.gpgPassphrase
+
+                    userOrg = configHelper.userOrg
+
+                    syncToMavenCentral = configHelper.isSyncableToMavenCentral()
+                    ossUser = configHelper.ossUser
+                    ossPassword = configHelper.ossPassword
+                    ossCloseRepo = configHelper.ossClose
+
                     dryRun = false
                     publish = true
+                    override = configHelper.isOverride()
+
                     configurations = ['archives']
-                    packageName = "${configHelper.group}.${configHelper.artifact}"
-                    packageIssueTrackerUrl = "${configHelper.url}/issues"
-                    packageWebsiteUrl = configHelper.url
-                    versionName = "${proj.version}"
-                    packagePublicDownloadNumbers = false
-                    packageLicenses = [ configHelper.licenseName ]
                 }
-
-                proj.pom {
-                    version = configHelper.version
-                    artifactId = configHelper.artifact
-                    groupId = configHelper.group
-                    packaging = packagingType
-
-                    project {
-                        licenses {
-                            license {
-                                name configHelper.licenseName
-                                url configHelper.licenseUrl
-                                distribution 'repo'
-                            }
-                        }
-                        packaging packagingType
-                        url configHelper.url
-                    }
-
-                    generatedDependencies.findAll {
-                            (it.version == 'unspecified' || it.version == 'undefined') &&
-                            it.groupId == rootProjectName }.each { dep ->
-                        dep.version = configHelper.version
-                        dep.groupId = configHelper.group
-
-                        if (configHelper.getLocalArtifact(dep.artifactId)) {
-                            dep.artifactId = configHelper.getLocalArtifact(dep.artifactId)
-                        }
-                    }
-                }.writeTo("build/poms/pom-default.xml")
 
                 proj.file("$proj.buildDir/libs/${proj.name}-sources.jar")
                         .renameTo("$proj.buildDir/libs/${proj.name}-${proj.version}-sources.jar")
@@ -195,7 +161,7 @@ public class PublishHelperPlugin implements Plugin<Project> {
         sourcesJarTask.classifier = 'sources'
         sourcesJarTask.from project.tasks.getByName("compileJava").source
 
-        project.tasks.publishModule.dependsOn 'assemble', 'test', 'check', 'sourcesJar'
+        project.tasks[PUBLISH_MODULE_TASK].dependsOn 'assemble', 'test', 'check', 'sourcesJar'
     }
 
     def configureAndroid(Project project) {
@@ -205,7 +171,65 @@ public class PublishHelperPlugin implements Plugin<Project> {
         sourcesJarTask.classifier = 'sources'
         sourcesJarTask.from project.android.sourceSets.main.java.srcDirs
 
-        project.tasks.publishModule.dependsOn 'assembleRelease', 'testReleaseUnitTest', 'check', 'sourcesJar'
+        project.tasks[PUBLISH_MODULE_TASK].dependsOn 'assembleRelease', 'testReleaseUnitTest', 'check', 'sourcesJar'
+    }
+
+    def flattenPom(Project proj, String packagingType) {
+        ConfigurationHelper configHelper = new ConfigurationHelper(globalConfigurations, proj)
+        return {
+            version = configHelper.version
+            artifactId = configHelper.artifact
+            groupId = configHelper.group
+            packaging = packagingType
+
+            project {
+                licenses {
+                    license {
+                        name configHelper.licenseName
+                        url configHelper.licenseUrl
+                        distribution 'repo'
+                    }
+                }
+                packaging packagingType
+                url configHelper.githubUrl
+            }
+
+            if (!generatedDependencies.isEmpty()) {
+                def newGeneratedDependencies = []
+                def dependencyGenerator
+                dependencyGenerator = generatedDependencies.get(0)
+
+                // Since gradle is not adding some variants (eg releaseCompile or provided), I add them manually.
+                scopeConfigurations.each { pomScope, configs ->
+                    configs.each { scope ->
+                        if (proj.configurations.findByName(scope)) {
+                            proj.configurations[scope].allDependencies.each { def mockDependency ->
+                                def dependency = dependencyGenerator.clone()
+                                if (isLocalDependency(mockDependency.group, mockDependency.version)) {
+                                    dependency.groupId = configHelper.group
+                                    dependency.version = configHelper.version
+
+                                    if (configHelper.getLocalArtifact(mockDependency.name)) {
+                                        dependency.artifactId = configHelper.getLocalArtifact(mockDependency.name)
+                                    } else {
+                                        dependency.artifactId = mockDependency.name
+                                    }
+                                } else {
+                                    dependency.groupId = mockDependency.group
+                                    dependency.artifactId = mockDependency.name
+                                    dependency.version = mockDependency.version
+                                }
+                                dependency.scope = pomScope
+                                newGeneratedDependencies.add(dependency)
+                            }
+                        }
+                    }
+                }
+
+                configurations = null
+                dependencies = newGeneratedDependencies
+            }
+        }
     }
 
     def addArchives(String packagingType,
@@ -246,6 +270,11 @@ public class PublishHelperPlugin implements Plugin<Project> {
         if (project.tasks.findByName('javadocJar')) {
             project.artifacts.add('archives', project.tasks.javadocJar)
         }
+    }
+
+    def isLocalDependency(def groupId, def version) {
+        return (version == 'unspecified' || version == 'undefined') &&
+                groupId == rootProject.name
     }
 
 }
