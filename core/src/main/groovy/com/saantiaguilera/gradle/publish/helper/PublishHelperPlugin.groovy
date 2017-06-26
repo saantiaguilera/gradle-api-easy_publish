@@ -69,8 +69,10 @@ public class PublishHelperPlugin implements Plugin<Project> {
             project.task(PUBLISH_ROOT_TASK) { task ->
                 task.description 'Publish all the possible modules'
                 project.subprojects.each { subproject ->
-                    if (subproject.tasks.findByName(PUBLISH_MODULE_TASK)) {
-                        task.dependsOn subproject.tasks[PUBLISH_MODULE_TASK]
+                    subproject.afterEvaluate {
+                        if (subproject.tasks.findByName(PUBLISH_MODULE_TASK)) {
+                            task.dependsOn subproject.tasks[PUBLISH_MODULE_TASK]
+                        }
                     }
                 }
             }
