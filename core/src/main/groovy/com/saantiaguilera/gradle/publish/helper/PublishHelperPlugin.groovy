@@ -21,6 +21,18 @@ public class PublishHelperPlugin implements Plugin<Project> {
     public static final String PUBLISH_ROOT_TASK = 'publishModules'
     public static final String PUBLISH_MODULE_TASK = 'publishModule'
 
+    public static final Map<String, List<String>> scopeConfigurations = [
+            provided : [
+                'compileOnly', 'provided', 'releaseProvided'
+            ],
+            compile : [
+                'compile', 'releaseCompile'
+            ],
+            test : [
+                'testCompile', 'testReleaseCompile'
+            ]
+    ]
+
     public PublishGlobalConfigurations globalConfigurations
 
     public Project rootProject
@@ -94,20 +106,39 @@ public class PublishHelperPlugin implements Plugin<Project> {
 
                 proj.bintrayUpload {
                     repoName = configHelper.bintrayRepositoryName
-                    packageVcsUrl =
-                            "${configHelper.url}/releases/tag/v${proj.version}"
-                    versionVcsTag = "v${proj.version}"
+
+                    packageName = "${configHelper.group}.${configHelper.artifact}"
+                    packageDesc = configHelper.packageDescription
+                    packageIssueTrackerUrl = "${configHelper.githubUrl}/issues"
+                    packageWebsiteUrl = configHelper.websiteUrl
+                    packagePublicDownloadNumbers = configHelper.isPublicDownloadNumbers()
+                    packageGithubRepo = configHelper.githubUrl
+                    packageLicenses = [configHelper.licenseName]
+                    packageLabels = configHelper.packageLabels
+                    packageVcsUrl = "${configHelper.githubUrl}/releases/tag/v${proj.version}"
+
                     user = configHelper.bintrayUser
                     apiKey = configHelper.bintrayApiKey
+
+                    versionName = "${proj.version}"
+                    versionVcsTag = "v${proj.version}"
+                    versionDesc = configHelper.versionDescription
+
+                    signVersion = configHelper.isGpgSign()
+                    gpgPassphrase = configHelper.gpgPassphrase
+
+                    userOrg = configHelper.userOrg
+
+                    syncToMavenCentral = configHelper.isSyncableToMavenCentral()
+                    ossUser = configHelper.ossUser
+                    ossPassword = configHelper.ossPassword
+                    ossCloseRepo = configHelper.ossClose
+
                     dryRun = false
                     publish = true
+                    override = configHelper.isOverride()
+
                     configurations = ['archives']
-                    packageName = "${configHelper.group}.${configHelper.artifact}"
-                    packageIssueTrackerUrl = "${configHelper.url}/issues"
-                    packageWebsiteUrl = configHelper.url
-                    versionName = "${proj.version}"
-                    packagePublicDownloadNumbers = false
-                    packageLicenses = [configHelper.licenseName]
                 }
 
                 proj.file("$proj.buildDir/libs/${proj.name}-sources.jar")
@@ -163,52 +194,38 @@ public class PublishHelperPlugin implements Plugin<Project> {
                 url configHelper.url
             }
 
-            def newGeneratedDependencies = []
-            def dependencyGenerator
             if (!generatedDependencies.isEmpty()) {
+                def newGeneratedDependencies = []
+                def dependencyGenerator
                 dependencyGenerator = generatedDependencies.get(0)
 
-                // Since gradle is not adding me releaseCompile and some others scopes, I add them manually.
-                def scopes = ['compile', 'releaseCompile', 'testCompile', 'compileOnly', 'provided', 'testReleaseCompile', 'releaseProvided']
-                scopes.each { scope ->
-                    if (proj.configurations.findByName(scope)) {
-                        proj.configurations[scope].allDependencies.each { def mockDependency ->
-                            def dependency = dependencyGenerator.clone()
-                            if (isLocalDependency(mockDependency.group, mockDependency.version)) {
-                                dependency.groupId = configHelper.group
-                                dependency.version = configHelper.version
+                // Since gradle is not adding some variants (eg releaseCompile or provided), I add them manually.
+                scopeConfigurations.each { pomScope, configs ->
+                    configs.each { scope ->
+                        if (proj.configurations.findByName(scope)) {
+                            proj.configurations[scope].allDependencies.each { def mockDependency ->
+                                def dependency = dependencyGenerator.clone()
+                                if (isLocalDependency(mockDependency.group, mockDependency.version)) {
+                                    dependency.groupId = configHelper.group
+                                    dependency.version = configHelper.version
 
-                                if (configHelper.getLocalArtifact(mockDependency.name)) {
-                                    dependency.artifactId = configHelper.getLocalArtifact(mockDependency.name)
+                                    if (configHelper.getLocalArtifact(mockDependency.name)) {
+                                        dependency.artifactId = configHelper.getLocalArtifact(mockDependency.name)
+                                    } else {
+                                        dependency.artifactId = mockDependency.name
+                                    }
                                 } else {
+                                    dependency.groupId = mockDependency.group
                                     dependency.artifactId = mockDependency.name
+                                    dependency.version = mockDependency.version
                                 }
-                            } else {
-                                dependency.groupId = mockDependency.group
-                                dependency.artifactId = mockDependency.name
-                                dependency.version = mockDependency.version
+                                dependency.scope = pomScope
+                                newGeneratedDependencies.add(dependency)
                             }
-                            switch (scope) {
-                                case 'compile':
-                                case 'releaseCompile':
-                                    dependency.scope = 'compile'
-                                    break;
-                                case 'testCompile':
-                                case 'testReleaseCompile':
-                                    dependency.scope = 'test'
-                                    break;
-                                case 'compileOnly':
-                                case 'releaseProvided':
-                                case 'provided':
-                                    dependency.scope = 'provided'
-                                    break;
-                                default:
-                                    dependency.scope = 'compile'
-                            }
-                            newGeneratedDependencies.add(dependency)
                         }
                     }
                 }
+
                 configurations = null
                 dependencies = newGeneratedDependencies
             }
