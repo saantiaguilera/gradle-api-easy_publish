@@ -17,11 +17,15 @@ buildscript {
     // ...
     dependencies {
         classpath "com.saantiaguilera.gradle.publish.helper:core:<latest_version>"
+        
+        // We also need the bintray and maven plugins!
+        classpath("com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7.3")
+        classpath("com.github.dcendents:android-maven-gradle-plugin:1.5")
     }
 }
 ```
 
-This will create a single task `publishModules`. Please read the _Run!_ part of the readme for more information
+This will create a single root task `publishModules` and for each module a task `publishModule`. Please read the _Run!_ part of the readme for more information
 
 ### Configure
 
@@ -48,13 +52,15 @@ publishGlobalConfigurations {
         'module2' : 'artifact2'               // "com.my.library:artifact1:1.0.0"
     ]
 
-    url = "http://github.com/user/repo"       // github url
+    githubUrl = "http://github.com/user/repo" // Github url
 
     bintrayApiKey = System.getenv('apikey')   // Api key of bintray
     bintrayUser = System.getenv('user')       // User of bintray
 
     licenseUrl = 'sourceforge_url'            // License url to find it
     licenseName = 'sourceforge_name'          // License full name
+
+    // And more. Please see PublishGlobalConfigurations.groovy class inside core/ to see all properties
 }
 ```
 
@@ -77,13 +83,15 @@ publishConfigurations {
 
     bintrayRepository = 'maven'
 
-    url = "https://github.com/saantiaguilera/android-api-SecureKeys"
+    githubUrl = "https://github.com/saantiaguilera/android-api-SecureKeys"
 
     bintrayUser = System.getenv('BINTRAY_USER')
     bintrayApiKey = System.getenv('BINTRAY_APIKEY')
 
     licenseUrl = "http://www.opensource.org/licenses/MIT"
     licenseName = "The MIT License"
+
+    // And more. Please see PublishConfigurations.groovy class inside core/ to see all properties
 }
 ```
 
@@ -91,12 +99,15 @@ If a module has declared X values, they will be used instead of the globals! You
 
 ### Run!
 
-Run `./gradlew publishModules` and it will publish all the possible modules in the right way, even if some are AAR and others JAR and depend between them :)
+Run `./gradlew my_module:publishModule` and it will publish it :)
+
+If you want to publish all available modules you can run `./gradlew publishModules` and all the modules will be published, even if some are AAR and others JAR and depend between them.
 
 ### Notes
 
 - Even this plugin publishes with itself! Dog-fooding at its finest
 - If a local dependency is found in another module (`compile project(':other_module')'`) it will be resolved as `groupId:thatModuleName|artifactMappedToTheModuleNameInGlobalConfigs:version`
+- By default javadocs arent included in the bintray package. If you wish to also deploy javadoc, please create a task `javadocJar` in your project and we will detect it and automatically add them :)
 
 ### Contributing
 

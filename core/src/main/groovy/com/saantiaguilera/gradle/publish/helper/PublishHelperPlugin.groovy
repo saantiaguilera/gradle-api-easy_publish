@@ -18,15 +18,28 @@ public class PublishHelperPlugin implements Plugin<Project> {
 
     public static final String ANDROID_LIBRARY_PLUGIN_ID = "com.android.library"
 
-    public static final String PUBLISH_TASK = 'publishModules'
+    public static final String PUBLISH_ROOT_TASK = 'publishModules'
+    public static final String PUBLISH_MODULE_TASK = 'publishModule'
+
+    public static final Map<String, List<String>> scopeConfigurations = [
+            provided : [
+                'compileOnly', 'provided', 'releaseProvided'
+            ],
+            compile : [
+                'compile', 'releaseCompile'
+            ],
+            test : [
+                'testCompile', 'testReleaseCompile'
+            ]
+    ]
 
     public PublishGlobalConfigurations globalConfigurations
 
-    public String rootProjectName
+    public Project rootProject
 
     @Override
     void apply(Project project) {
-        rootProjectName = project.name
+        rootProject = project
 
         project.extensions.create(EXTENSION_PUBLISH_GLOBAL_CONFIGURATIONS, PublishGlobalConfigurations)
         globalConfigurations = project.publishGlobalConfigurations
@@ -52,6 +65,18 @@ public class PublishHelperPlugin implements Plugin<Project> {
             }
         }
 
+        project.afterEvaluate {
+            project.task(PUBLISH_ROOT_TASK) { task ->
+                task.description 'Publish all the possible modules'
+                project.subprojects.each { subproject ->
+                    subproject.afterEvaluate {
+                        if (subproject.tasks.findByName(PUBLISH_MODULE_TASK)) {
+                            task.dependsOn subproject.tasks[PUBLISH_MODULE_TASK]
+                        }
+                    }
+                }
+            }
+        }
     }
 
     def configure(Project proj, String packagingType) {
@@ -65,46 +90,17 @@ public class PublishHelperPlugin implements Plugin<Project> {
                 repositories {
                     mavenDeployer {
                         repository(url: "file://${System.properties['user.home']}/.m2/repository")
+                        pom(flattenPom(proj, packagingType))
+                            .writeTo("build/poms/pom-default.xml")
 
-                        pom {
-                            version = configHelper.version
-                            artifactId = configHelper.artifact
-                            groupId = configHelper.group
-                            packaging = packagingType
 
-                            project {
-                                licenses {
-                                    license {
-                                        name configHelper.licenseName
-                                        url configHelper.licenseUrl
-                                        distribution 'repo'
-                                    }
-                                }
-                                packaging packagingType
-                                url configHelper.url
-                            }
-
-                            whenConfigured {
-                                dependencies.each {
-                                    if (it.version == 'undefined' &&
-                                            it.groupId == rootProjectName) {
-                                        it.version = configHelper.version
-                                        it.groupId = configHelper.group
-
-                                        if (configHelper.getLocalArtifact(it.artifactId)) {
-                                            it.artifactId = configHelper.getLocalArtifact(it.artifactId)
-                                        }
-                                    }
-                                }
-                            }
-                        }
                     }
                 }
             }
         }
 
-        proj.task(PUBLISH_TASK) {
-            description 'Publishes a new release version of the modules to Bintray.'
+        proj.task(PUBLISH_MODULE_TASK) {
+            description 'Publishes a new release version of the module to Bintray.'
             finalizedBy 'bintrayUpload'
             doLast {
                 proj.group = configHelper.group
@@ -112,57 +108,47 @@ public class PublishHelperPlugin implements Plugin<Project> {
 
                 proj.bintrayUpload {
                     repoName = configHelper.bintrayRepositoryName
-                    packageVcsUrl =
-                            "${configHelper.url}/releases/tag/v${proj.version}"
-                    versionVcsTag = "v${proj.version}"
+
+                    packageName = "${configHelper.group}.${configHelper.artifact}"
+                    packageDesc = configHelper.packageDescription
+                    packageIssueTrackerUrl = "${configHelper.githubUrl}/issues"
+                    packageWebsiteUrl = configHelper.websiteUrl
+                    packagePublicDownloadNumbers = configHelper.isPublicDownloadNumbers()
+                    packageGithubRepo = configHelper.githubUrl
+                    packageLicenses = [configHelper.licenseName]
+                    packageLabels = configHelper.packageLabels
+                    packageVcsUrl = "${configHelper.githubUrl}/releases/tag/v${proj.version}"
+
                     user = configHelper.bintrayUser
                     apiKey = configHelper.bintrayApiKey
+
+                    versionName = "${proj.version}"
+                    versionVcsTag = "v${proj.version}"
+                    versionDesc = configHelper.versionDescription
+
+                    signVersion = configHelper.isGpgSign()
+                    gpgPassphrase = configHelper.gpgPassphrase
+
+                    userOrg = configHelper.userOrg
+
+                    syncToMavenCentral = configHelper.isSyncableToMavenCentral()
+                    ossUser = configHelper.ossUser
+                    ossPassword = configHelper.ossPassword
+                    ossCloseRepo = configHelper.ossClose
+
                     dryRun = false
                     publish = true
+                    override = configHelper.isOverride()
+
                     configurations = ['archives']
-                    packageName = "${configHelper.group}.${configHelper.artifact}"
-                    packageIssueTrackerUrl = "${configHelper.url}/issues"
-                    packageWebsiteUrl = configHelper.url
-                    versionName = "${proj.version}"
-                    packagePublicDownloadNumbers = false
-                    packageLicenses = [ configHelper.licenseName ]
                 }
-
-                proj.pom {
-                    version = configHelper.version
-                    artifactId = configHelper.artifact
-                    groupId = configHelper.group
-                    packaging = packagingType
-
-                    project {
-                        licenses {
-                            license {
-                                name configHelper.licenseName
-                                url configHelper.licenseUrl
-                                distribution 'repo'
-                            }
-                        }
-                        packaging packagingType
-                        url configHelper.url
-                    }
-
-                    dependencies.each {
-                        if (it.version == 'undefined' &&
-                                it.groupId == rootProjectName) {
-                            it.version = configHelper.version
-                            it.groupId = configHelper.group
-
-                            if (configHelper.getLocalArtifact(it.artifactId)) {
-                                it.artifactId = configHelper.getLocalArtifact(it.artifactId)
-                            }
-                        }
-                    }
-                }.writeTo("build/poms/pom-default.xml")
 
                 proj.file("$proj.buildDir/libs/${proj.name}-sources.jar")
                         .renameTo("$proj.buildDir/libs/${proj.name}-${proj.version}-sources.jar")
 
                 proj.configurations.archives.artifacts.clear()
+
+                addArchives(packagingType, proj)
 
                 println "Publishing: ${String.format("%s:%s:%s", proj.group, proj.name, proj.version)}"
             }
@@ -172,66 +158,125 @@ public class PublishHelperPlugin implements Plugin<Project> {
     }
 
     def configureJava(Project project) {
-        ConfigurationHelper configHelper = new ConfigurationHelper(globalConfigurations, project)
-
         def sourcesJarTask = project.tasks.create "sourcesJar", Jar
         sourcesJarTask.dependsOn project.tasks.getByName("compileJava")
         sourcesJarTask.classifier = 'sources'
         sourcesJarTask.from project.tasks.getByName("compileJava").source
 
-        project.tasks.publishModules.dependsOn 'assemble', 'test', 'check', 'sourcesJar'
+        project.tasks[PUBLISH_MODULE_TASK].dependsOn 'assemble', 'test', 'check', 'sourcesJar'
+    }
 
-        project.task("${PUBLISH_TASK}AddArtifacts") {
-            mustRunAfter PUBLISH_TASK
-            doLast {
-                def jarParentDirectory = "$project.buildDir/libs/"
-                def actualDestination = jarParentDirectory + "${configHelper.artifact}.jar"
+    def configureAndroid(Project project) {
+        project.apply plugin: 'com.github.dcendents.android-maven'
 
-                def prevFile = project.file(jarParentDirectory + "${project.name}.jar");
-                if (prevFile.exists()) {
-                    prevFile.renameTo(actualDestination)
+        def sourcesJarTask = project.tasks.create "sourcesJar", Jar
+        sourcesJarTask.classifier = 'sources'
+        sourcesJarTask.from project.android.sourceSets.main.java.srcDirs
+
+        project.tasks[PUBLISH_MODULE_TASK].dependsOn 'assembleRelease', 'testReleaseUnitTest', 'check', 'sourcesJar'
+    }
+
+    def flattenPom(Project proj, String packagingType) {
+        ConfigurationHelper configHelper = new ConfigurationHelper(globalConfigurations, proj)
+        return {
+            version = configHelper.version
+            artifactId = configHelper.artifact
+            groupId = configHelper.group
+            packaging = packagingType
+
+            project {
+                licenses {
+                    license {
+                        name configHelper.licenseName
+                        url configHelper.licenseUrl
+                        distribution 'repo'
+                    }
+                }
+                packaging packagingType
+                url configHelper.githubUrl
+            }
+
+            if (!generatedDependencies.isEmpty()) {
+                def newGeneratedDependencies = []
+                def dependencyGenerator
+                dependencyGenerator = generatedDependencies.get(0)
+
+                // Since gradle is not adding some variants (eg releaseCompile or provided), I add them manually.
+                scopeConfigurations.each { pomScope, configs ->
+                    configs.each { scope ->
+                        if (proj.configurations.findByName(scope)) {
+                            proj.configurations[scope].allDependencies.each { def mockDependency ->
+                                def dependency = dependencyGenerator.clone()
+                                if (isLocalDependency(mockDependency.group, mockDependency.version)) {
+                                    dependency.groupId = configHelper.group
+                                    dependency.version = configHelper.version
+
+                                    if (configHelper.getLocalArtifact(mockDependency.name)) {
+                                        dependency.artifactId = configHelper.getLocalArtifact(mockDependency.name)
+                                    } else {
+                                        dependency.artifactId = mockDependency.name
+                                    }
+                                } else {
+                                    dependency.groupId = mockDependency.group
+                                    dependency.artifactId = mockDependency.name
+                                    dependency.version = mockDependency.version
+                                }
+                                dependency.scope = pomScope
+                                newGeneratedDependencies.add(dependency)
+                            }
+                        }
+                    }
                 }
 
-                project.artifacts.add('archives', project.file(actualDestination))
-                project.artifacts.add('archives', project.tasks['sourcesJar'])
+                configurations = null
+                dependencies = newGeneratedDependencies
             }
         }
     }
 
-    def configureAndroid(Project project) {
+    def addArchives(String packagingType,
+                    Project project) {
         ConfigurationHelper configHelper = new ConfigurationHelper(globalConfigurations, project)
+        switch (packagingType) {
+            case TYPE_JAR:
+                def jarParentDirectory = "$project.buildDir/libs/"
+                def prevFile = project.file(jarParentDirectory + "${project.name}.jar");
+                def actualFile = project.file(jarParentDirectory + "${configHelper.artifact}-${configHelper.version}.jar")
 
-        project.apply plugin: 'com.github.dcendents.android-maven'
-
-        project.android.libraryVariants.all { variant ->
-            def sourcesJarTask = project.tasks.create "${variant.buildType.name}SourcesJar", Jar
-            sourcesJarTask.dependsOn variant.javaCompile
-            sourcesJarTask.classifier = 'sources'
-            sourcesJarTask.from variant.javaCompile.source
-        }
-
-        project.tasks.publishModules.dependsOn 'assembleRelease', 'testReleaseUnitTest', 'check', 'releaseSourcesJar'
-
-        project.task("${PUBLISH_TASK}AddArtifacts") {
-            mustRunAfter PUBLISH_TASK
-            doLast {
-                def aarParentDirectory = "$project.buildDir/outputs/aar/"
-
-                def prevFile = project.file(aarParentDirectory + "${project.name}.aar");
-                if (prevFile.exists()) {
-                    prevFile.delete();
+                if (prevFile.exists() && prevFile.path != actualFile.path) {
+                    if (actualFile.exists()) {
+                        actualFile.delete()
+                    }
+                    actualFile << prevFile.bytes
                 }
 
+                project.artifacts.add('archives', actualFile)
+                break;
+            case TYPE_AAR:
+                def aarParentDirectory = "$project.buildDir/outputs/aar/"
                 File aarFile = project.file(aarParentDirectory + "${project.name}-release.aar")
+                File actualFile = project.file(aarParentDirectory + "${configHelper.artifact}.aar")
 
-                def actualDestination = aarParentDirectory + "${configHelper.artifact}.aar"
+                if (aarFile.exists() != aarFile.path != actualFile.path) {
+                    if (actualFile.exists()) {
+                        actualFile.delete()
+                    }
+                    actualFile << aarFile.bytes
+                }
 
-                aarFile.renameTo(actualDestination)
-
-                project.artifacts.add('archives', project.file(actualDestination))
-                project.artifacts.add('archives', project.tasks['releaseSourcesJar'])
-            }
+                project.artifacts.add('archives', actualFile)
+                break;
         }
+
+        project.artifacts.add('archives', project.tasks['sourcesJar'])
+        if (project.tasks.findByName('javadocJar')) {
+            project.artifacts.add('archives', project.tasks.javadocJar)
+        }
+    }
+
+    def isLocalDependency(def groupId, def version) {
+        return (version == 'unspecified' || version == 'undefined') &&
+                groupId == rootProject.name
     }
 
 }

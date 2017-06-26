@@ -65,10 +65,22 @@ public class ConfigurationHelper {
         return scopeConf.licenseUrl ?: globalConf.licenseUrl
     }
 
-    def getUrl() {
-        def url = scopeConf.url ?: globalConf.url
+    def isPublicDownloadNumbers() {
+        return scopeConf.publicDownloadNumbers ?: globalConf.publicDownloadNumbers
+    }
+
+    def getGithubUrl() {
+        def url = scopeConf.githubUrl ?: globalConf.githubUrl
         if (!url) {
-            throw new GradleException('No url found in global or scope extension of module:' + subprojectName)
+            throw new GradleException('No githubUrl found in global or scope extension of module:' + subprojectName)
+        }
+        return url
+    }
+
+    def getWebsiteUrl() {
+        def url = scopeConf.websiteUrl ?: globalConf.websiteUrl
+        if (!url) {
+            url = githubUrl
         }
         return url
     }
@@ -92,6 +104,65 @@ public class ConfigurationHelper {
             throw new GradleException('No bintrayApiKey found in global or scope extension of module:' + subprojectName)
         }
         return apiKey
+    }
+
+    def isOverride() {
+        return scopeConf.override ?: globalConf.override
+    }
+
+    def getPackageDescription() {
+        return scopeConf.packageDescription ?: globalConf.packageDescription
+    }
+
+    def getVersionDescription() {
+        return scopeConf.versionDescription ?: globalConf.versionDescription
+    }
+
+    def getPackageLabels() {
+        return scopeConf.packageLabels ?: globalConf.packageLabels
+    }
+
+    def isGpgSign() {
+        return scopeConf.gpgSign ?: globalConf.gpgSign
+    }
+
+    def getGpgPassphrase() {
+        return scopeConf.gpgPassphrase ?: globalConf.gpgPassphrase
+    }
+
+    def getUserOrg() {
+        return scopeConf.userOrg ?: globalConf.userOrg
+    }
+
+    def isSyncableToMavenCentral() {
+        return scopeConf.syncToMavenCentral ?: globalConf.syncToMavenCentral
+    }
+
+    def getOssUser() {
+        def user = scopeConf.ossUser ?: globalConf.ossUser
+        if (!user && isSyncableToMavenCentral()) {
+            throw new GradleException('ossUser property must be declared if using syncToMavenCentral')
+        }
+        return user
+    }
+
+    def getOssPassword() {
+        def password = scopeConf.ossPassword ?: globalConf.ossPassword
+        if (!password && isSyncableToMavenCentral()) {
+            throw new GradleException('ossPassword property must be declared if using syncToMavenCentral')
+        }
+        return password
+    }
+
+    def getOssClose() {
+        def close = scopeConf.ossClose ?: globalConf.ossClose
+        if (close && (close != '1' && close != '0')) {
+            throw new GradleException('ossClose property must be "0" or "1"')
+        }
+        if (!close && isSyncableToMavenCentral()) {
+            close = '1'
+        }
+        return close
     }
 
 }
