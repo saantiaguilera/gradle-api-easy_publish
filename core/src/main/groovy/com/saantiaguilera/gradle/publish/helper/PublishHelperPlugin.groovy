@@ -55,20 +55,12 @@ public class PublishHelperPlugin implements Plugin<Project> {
         }
 
         project.afterEvaluate {
-            project.task(PUBLISH_ROOT_TASK) { Task task ->
-                task.description 'Publish all the modules ordered and specified by publishGlobalConfigurations { publishOrder }'
-                if (project.gradle.startParameter.taskNames.toListString().contains("publishModules") &&
-                        globalConfigurations.publishOrder && !globalConfigurations.publishOrder.isEmpty()) {
-                    def order = []
-                    globalConfigurations.publishOrder.each { String moduleName ->
-                        order.add(project.subprojects.find { it.name == moduleName }.tasks.publishModule)
+            project.task(PUBLISH_ROOT_TASK) { task ->
+                task.description 'Publish all the possible modules'
+                subprojects.each { subproject ->
+                    if (subproject.tasks.findByName('publishModule')) {
+                        task.dependsOn subproject.tasks.publishModule
                     }
-                    for (int i = order.size() - 1; i >= 0; i--) {
-                        if (i - 1 >= 0) {
-                            order[i].dependsOn order[i - 1]
-                        }
-                    }
-                    task.dependsOn order[order.size() - 1]
                 }
             }
         }
