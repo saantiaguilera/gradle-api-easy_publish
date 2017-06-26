@@ -191,7 +191,7 @@ public class PublishHelperPlugin implements Plugin<Project> {
                     }
                 }
                 packaging packagingType
-                url configHelper.url
+                url configHelper.githubUrl
             }
 
             if (!generatedDependencies.isEmpty()) {
