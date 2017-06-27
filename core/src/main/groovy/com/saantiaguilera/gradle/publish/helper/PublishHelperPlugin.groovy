@@ -114,7 +114,6 @@ public class PublishHelperPlugin implements Plugin<Project> {
                     packageIssueTrackerUrl = "${configHelper.githubUrl}/issues"
                     packageWebsiteUrl = configHelper.websiteUrl
                     packagePublicDownloadNumbers = configHelper.isPublicDownloadNumbers()
-                    packageGithubRepo = configHelper.githubUrl
                     packageLicenses = [configHelper.licenseName]
                     packageLabels = configHelper.packageLabels
                     packageVcsUrl = "${configHelper.githubUrl}/releases/tag/v${proj.version}"
