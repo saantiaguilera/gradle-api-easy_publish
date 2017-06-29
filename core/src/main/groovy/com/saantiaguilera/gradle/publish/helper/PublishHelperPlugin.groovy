@@ -256,7 +256,7 @@ public class PublishHelperPlugin implements Plugin<Project> {
                 File aarFile = project.file(aarParentDirectory + "${project.name}-release.aar")
                 File actualFile = project.file(aarParentDirectory + "${configHelper.artifact}.aar")
 
-                if (aarFile.exists() != aarFile.path != actualFile.path) {
+                if (aarFile.exists() && aarFile.path != actualFile.path) {
                     if (actualFile.exists()) {
                         actualFile.delete()
                     }
