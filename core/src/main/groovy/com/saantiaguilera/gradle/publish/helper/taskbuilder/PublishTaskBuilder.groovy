@@ -4,6 +4,7 @@ import com.saantiaguilera.gradle.publish.helper.extension.ConfigurationHelper
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.plugins.JavaPlugin
+import org.gradle.api.publication.maven.internal.pom.DefaultMavenPom
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.tasks.bundling.Jar
 
@@ -18,16 +19,17 @@ abstract class PublishTaskBuilder {
     protected Project project
     protected def variant
 
+    protected ConfigurationHelper configHelper
+
     PublishTaskBuilder(variant) {
         this.variant = variant
     }
 
     Task build(Project project) {
         this.project = project
+        this.configHelper = new ConfigurationHelper(project)
 
         Task task = project.task ("${TASK_NAME_PREFIX}${variant.name.capitalize()}") {
-            ConfigurationHelper configHelper = new ConfigurationHelper(project)
-
             doFirst {
                 project.tasks.bintrayUpload.with {
                     repoName = configHelper.bintrayRepositoryName
@@ -91,30 +93,18 @@ abstract class PublishTaskBuilder {
             }
 
             "${TASK_NAME_PREFIX}${variant.name.capitalize()}"(MavenPublication) {
-                artifactId = project.name
-                groupId = project.group
-                version = project.version
-
+                attachPom(it)
                 artifacts = [
                         getArtifact(),
                         sourcesJar
                 ]
             }
-
-            project.tasks.whenTaskAdded {
-                if (it.name.contains('generatePomFileFor')) {
-                    String hookedTask = it.name.replaceFirst('generatePomFileFor', '').replaceFirst("Publication", '')
-
-                    if (hookedTask != null && hookedTask.length() != 0) {
-                        hookedTask = (Character.toLowerCase(hookedTask.charAt(0)) as String) + hookedTask.substring(1)
-                        project.tasks.findByName(hookedTask).dependsOn it
-                    }
-                }
-            }
         }
     }
 
     protected abstract def getArtifact()
-    protected abstract def getArtifactTaskName()
+    protected abstract String getArtifactTaskName()
+
+    protected abstract void attachPom(MavenPublication it)
 
 }
