@@ -9,3 +9,6 @@ dependencies {
     compile gradleApi()
     compile localGroovy()
 }
+
+version = "9.0.5"
+group = 'com.saantiaguilera.gradle.publish.helper'
