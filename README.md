@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/saantiaguilera/gradle-api-easy_publish.svg?branch=master)](https://travis-ci.org/saantiaguilera/gradle-api-easy_publish) [![Download](https://api.bintray.com/packages/saantiaguilera/maven/com.saantiaguilera.gradle.publish.helper.core/images/download.svg) ](https://bintray.com/saantiaguilera/maven/com.saantiaguilera.gradle.publish.helper.core/_latestVersion)
 
-Publish java/android modules to bintray in a easy way. This library is aimed for Android developers that have Android and Java libraries (or even both) in projects and wish to publish them fast and easy.
+Publish java/android modules to bintray in a easy way. This library is aimed for Android developers that have Android and/or Java libraries in projects and wish to publish them to Bintray fast and easy.
 
 ## Usage
 
