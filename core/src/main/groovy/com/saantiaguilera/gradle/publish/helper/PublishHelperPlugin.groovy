@@ -15,12 +15,9 @@ class PublishHelperPlugin implements Plugin<Project> {
 
     public static final String ANDROID_LIBRARY_PLUGIN_ID = "com.android.library"
 
-    public PublishGlobalConfigurations globalConfigurations
-
     @Override
     void apply(Project project) {
         project.extensions.create(EXTENSION_PUBLISH_GLOBAL_CONFIGURATIONS, PublishGlobalConfigurations)
-        globalConfigurations = project.publishGlobalConfigurations
 
         project.subprojects { subproject ->
             subproject.extensions.create(EXTENSION_PUBLISH_CONFIGURATIONS, PublishConfigurations)
