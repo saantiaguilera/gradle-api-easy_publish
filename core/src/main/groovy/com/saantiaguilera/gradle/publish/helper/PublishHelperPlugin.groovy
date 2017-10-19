@@ -8,9 +8,6 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.JavaPlugin
 
-/**
- * Created by saantiaguilera on 6/22/17.
- */
 class PublishHelperPlugin implements Plugin<Project> {
 
     public static final String EXTENSION_PUBLISH_CONFIGURATIONS = "publishConfigurations"

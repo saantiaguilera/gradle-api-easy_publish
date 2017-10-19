@@ -6,7 +6,7 @@ import org.gradle.api.plugins.MavenPlugin
 import org.gradle.api.publish.maven.plugins.MavenPublishPlugin
 
 /**
- * Abstract publisher module, it will configure the project for having publishing features.
+ * Abstract publisher plugin, it will configure the project for having publishing features.
  */
 abstract class Publisher implements Plugin<Project> {
 

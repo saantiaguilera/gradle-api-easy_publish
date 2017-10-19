@@ -5,7 +5,7 @@ import com.saantiaguilera.gradle.publish.helper.taskbuilder.PublishTaskBuilder
 import org.gradle.api.Project
 
 /**
- * Java publishing module. It will create taskbuilder for each available sourceset.
+ * Java publishing plugin. It will create a publish task for each available sourceset.
  */
 class JavaPublisher extends Publisher {
 

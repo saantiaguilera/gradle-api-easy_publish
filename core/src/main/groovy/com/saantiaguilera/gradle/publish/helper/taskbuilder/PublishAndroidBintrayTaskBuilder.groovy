@@ -3,9 +3,6 @@ package com.saantiaguilera.gradle.publish.helper.taskbuilder
 import org.gradle.api.publication.maven.internal.pom.DefaultMavenPom
 import org.gradle.api.publish.maven.MavenPublication
 
-/**
- * Created by saguilera on 10/18/17.
- */
 class PublishAndroidBintrayTaskBuilder extends PublishTaskBuilder {
 
     PublishAndroidBintrayTaskBuilder(variant) {

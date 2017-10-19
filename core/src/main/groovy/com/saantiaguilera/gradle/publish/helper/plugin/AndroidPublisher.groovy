@@ -6,7 +6,7 @@ import org.gradle.api.Project
 import org.gradle.api.Task
 
 /**
- * Android library publishing module. It will create taskbuilder for each available variant and flavor.
+ * Android library publishing plugin. It will create a publishing task for each available variant and flavor.
  */
 class AndroidPublisher extends Publisher {
 
