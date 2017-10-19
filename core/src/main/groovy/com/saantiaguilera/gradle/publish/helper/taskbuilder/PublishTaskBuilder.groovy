@@ -25,7 +25,7 @@ abstract class PublishTaskBuilder {
         this.variant = variant
     }
 
-    Task build(Project project) {
+    Task into(Project project) {
         this.project = project
         this.configHelper = new ConfigurationHelper(project)
 

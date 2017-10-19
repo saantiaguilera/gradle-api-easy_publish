@@ -17,7 +17,7 @@ class AndroidPublisher extends Publisher {
         project.apply plugin: 'com.github.dcendents.android-maven'
 
         project.android.libraryVariants.all {
-            Task task = new PublishAndroidBintrayTaskBuilder(it).build(project)
+            Task task = new PublishAndroidBintrayTaskBuilder(it).into(project)
 
             if (task.name.toLowerCase().contains("release")) {
                 project.task (PublishTaskBuilder.TASK_NAME_PREFIX) {

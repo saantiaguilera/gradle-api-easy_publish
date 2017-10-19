@@ -18,7 +18,7 @@ class JavaPublisher extends Publisher {
 
         project.sourceSets.each {
             if (it.name != SOURCE_SETS_TEST) {
-                new PublishJavaBintrayTaskBuilder(it).build(project)
+                new PublishJavaBintrayTaskBuilder(it).into(project)
             }
         }
 
