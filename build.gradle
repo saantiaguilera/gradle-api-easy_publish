@@ -1,4 +1,4 @@
-apply plugin: 'com.saantiaguilera.gradle.publish.helper'
+apply plugin: 'saantiaguilera.bintray.publish'
 
 buildscript {
     repositories {
@@ -12,21 +12,20 @@ buildscript {
     dependencies {
         def mavenPluginVersion = '1.5'
         def bintrayPluginVersion = '1.7.3'
-        def latestStableMajorOfThisPlugin = '3.+'
+        def dynamicPublishPluginVersion = '4.+'
 
         classpath "com.jfrog.bintray.gradle:gradle-bintray-plugin:$bintrayPluginVersion"
         classpath "com.github.dcendents:android-maven-gradle-plugin:$mavenPluginVersion"
-        classpath "com.saantiaguilera.gradle.publish.helper:core:$latestStableMajorOfThisPlugin"
+        classpath "com.saantiaguilera.gradle.publish.helper:core:$dynamicPublishPluginVersion"
     }
 }
 
-group 'com.saantiaguilera.gradle.publish.helper'
-version '3.0.0'
+allprojects {
+    version = "4.0.0"
+    group = 'com.saantiaguilera.gradle.publish.helper'
+}
 
 publishGlobalConfigurations {
-    groupId = group
-    versionName = version
-
     githubUrl = "https://github.com/saantiaguilera/gradle-api-easy_publish" // Your url
 
     bintrayUser = System.getenv('BINTRAY_SANTI_USER') // Or get it from a file?
