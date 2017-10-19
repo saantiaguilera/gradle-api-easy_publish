@@ -6,7 +6,7 @@ Publish java/android modules to bintray in a easy way. This library is aimed for
 
 ## Usage
 
-For usage or information, please refer to the wiki
+For usage or information, please refer to the [wiki](https://github.com/saantiaguilera/gradle-api-easy_publish/wiki/Versions-4.X.X)
 
 ## License
 
