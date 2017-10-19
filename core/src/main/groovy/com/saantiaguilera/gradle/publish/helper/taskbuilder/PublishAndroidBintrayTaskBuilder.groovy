@@ -24,6 +24,8 @@ class PublishAndroidBintrayTaskBuilder extends PublishTaskBuilder {
 
     @Override
     protected void attachPom(MavenPublication publication) {
+        // We simulate the generatePomForMavenPublication task since the task is broken
+        // as it doesnt resolve dependencies of an android library
         publication.pom {
             DefaultMavenPom createdPom = null
             project.install {

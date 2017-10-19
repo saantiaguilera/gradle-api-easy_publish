@@ -79,26 +79,38 @@ abstract class PublishTaskBuilder {
     }
 
     protected void createPublication() {
-        project.publishing.publications {
-            boolean isPureJava = project.plugins.findPlugin(JavaPlugin)
-            def sourceDirs = isPureJava ? variant.allSource : variant.sourceSets.collect { it.javaDirectories }
+        boolean isPureJava = project.plugins.findPlugin(JavaPlugin)
+        def sourceDirs = isPureJava ? variant.allSource : variant.sourceSets.collect {
+            it.javaDirectories
+        }
 
-            def sourcesJar = project.tasks.findByName("${variant.name}SourcesJar")
-            if (!sourcesJar) {
-                sourcesJar = project.task("${variant.name}SourcesJar", type: Jar) {
-                    description "Puts sources for ${variant.name} in a jar."
-                    from sourceDirs
-                    classifier = 'sources'
+        def sourcesJar = project.tasks.findByName("${variant.name}SourcesJar")
+        if (!sourcesJar) {
+            sourcesJar = project.task("${variant.name}SourcesJar", type: Jar) {
+                description "Puts sources for ${variant.name} in a jar."
+                from sourceDirs
+                classifier = 'sources'
+            }
+        }
+
+        def createMavenPublication = {
+            project.publishing.publications {
+                "${TASK_NAME_PREFIX}${variant.name.capitalize()}"(MavenPublication) {
+                    attachPom(it)
+                    artifacts = [
+                            getArtifact(),
+                            sourcesJar
+                    ]
                 }
             }
+        }
 
-            "${TASK_NAME_PREFIX}${variant.name.capitalize()}"(MavenPublication) {
-                attachPom(it)
-                artifacts = [
-                        getArtifact(),
-                        sourcesJar
-                ]
-            }
+        // I should investigate further as to why a java plugin needs to create the maven
+        // publication after evaluation, but an android project doesnt.
+        if (project.plugins.hasPlugin(JavaPlugin)) {
+            project.afterEvaluate createMavenPublication
+        } else {
+            createMavenPublication()
         }
     }
 
