@@ -1,25 +1,5 @@
 package com.saantiaguilera.gradle.publish.helper.extension
 
-/**
- * Example:
- *
- publishConfigurations {
-    groupId = project.groupId
-    artifactId = 'core'
-    versionName = libraryVersion
-
-    localArtifacts = [ "annotation" ] // Name of a local dependency this module consumes
-
-    bintrayRepository = 'maven'
-
-    url = "https://github.com/saantiaguilera/android-api-SecureKeys"
-
-    bintrayUser = System.getenv(BINTRAY_USER) // Or get it from a file?
-    bintrayApiKey = System.getenv(BINTRAY_APIKEY) // Or get if from a file?
- }
- *
- * Created by saguilera on 6/22/17.
- */
 class PublishConfigurations {
 
     String bintrayRepository                 // defaults to "maven"
